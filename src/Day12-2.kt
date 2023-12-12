@@ -1,29 +1,54 @@
 class Record(val string: String, val pattern: List<Int>)
 
+
+fun recordIsValid(record: Record): Boolean {
+    val lengthEnough = record.pattern.sum() + record.pattern.size <= record.string.length
+    val blocks = record.string.split(*listOf("?", ".").toTypedArray())
+        .filter { s -> s.isNotBlank() }.map { it.length }
+    val blocksIsEnough = blocks.size <= record.pattern.size + record.pattern.sum()
+    val maxPattern = (blocks.maxOrNull() ?: 0) <= (record.pattern.maxOrNull() ?: 0)
+
+    return lengthEnough && blocksIsEnough && maxPattern
+}
+
 fun interateVariants(record: Record): Sequence<Record> {
     return sequence {
         if (!record.string.contains('#') && record.pattern.isEmpty()) {
             yield(Record(record.string.replace('?', '.'), listOf()))
         }
-        val firstBlockLength = record.pattern.firstOrNull()
-        if (firstBlockLength != null) {
-
-            record.string.windowedSequence(firstBlockLength).forEachIndexed { index, window ->
+        val maxBlockLength = record.pattern.maxOrNull()
+        if (maxBlockLength != null) {
+            record.string.windowedSequence(maxBlockLength).forEachIndexed { index, window ->
                 if (!window.contains('.') && (index == 0 || record.string.get(index - 1) != '#')) {
-                    val prefix = record.string.substring(0..<index).replace('?', '.') + window.replace(
-                        '?',
-                        '#'
-                    )
+                    val indexOfMax = record.pattern.indexOf(maxBlockLength)
+                    var head = record.string.substring(0..<index)
 
-                    val tail = record.string.substring(index + window.length)
+                    var tail = record.string.substring(index + window.length)
+
+
 
                     if (
-                        (tail.isEmpty() || tail.first() != '#') && tail.replace(".", "").split('?')
-                            .filter { s -> s.isNotBlank() }.size <= record.pattern.size + record.pattern.sum()
+                        (tail.isEmpty() || tail.first() != '#') && (head.isEmpty() || head.last() != '#')
                     ) {
-                        val tailRecord = Record(tail.replaceFirstChar { '.' }, record.pattern.drop(1))
-                        interateVariants(tailRecord).forEach {
-                            yield(Record(prefix + it.string, listOf<Int>()))
+                        if (head.lastOrNull() == '?') {
+                            head = head.removeSuffix("?") + '.'
+                        }
+                        if (tail.firstOrNull() == '?') {
+                            tail = '.' + tail.removePrefix("?")
+                        }
+                        val headRecord = Record(head, record.pattern.slice(0..<indexOfMax))
+                        val tailRecord = Record(tail, record.pattern.drop(indexOfMax + 1))
+                        if (recordIsValid(headRecord) && recordIsValid(tailRecord)) {
+                            interateVariants(tailRecord).forEach { tRecord ->
+                                interateVariants(headRecord).forEach { hRecord ->
+                                    yield(
+                                        Record(
+                                            hRecord.string + "#".repeat(maxBlockLength) + tRecord.string,
+                                            listOf<Int>()
+                                        )
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -39,7 +64,6 @@ fun main() {
 
         val records = input.map {
             val splited = it.split(" ")
-            val s = (0..repeatCount).map { splited[0] }.joinToString("?")
 
             Record(
                 (0..<repeatCount).map { splited[0] }.joinToString("?"),
@@ -51,6 +75,7 @@ fun main() {
             println(
                 """parsing string: ${it.string} [${it.pattern.joinToString(", ")}]""".trimIndent()
             )
+//            interateVariants(it).forEach { v -> println(v.string) }
             val res = interateVariants(it).count().toLong()
             println("""result for string is: $res""")
             res
@@ -62,6 +87,8 @@ fun main() {
 
     // test if implementation meets criteria from the description, like:
     val testInput = readInput("Day12_test")
+
+    check(part2(listOf("????.#...#... 4,1,1"), 1) == 1L)
 
     check(part2(testInput, 1) == 21L)
 
