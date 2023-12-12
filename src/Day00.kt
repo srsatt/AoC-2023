@@ -1,10 +1,14 @@
 fun main() {
     fun part1(input: List<String>): Int {
-        return input.size
+        val res = input.size
+        println("""res of the part 2 is: $res""")
+        return res
     }
 
     fun part2(input: List<String>): Int {
-        return input.size
+        val res = input.size
+        println("""res of the part 2 is: $res""")
+        return res
     }
 
     // test if implementation meets criteria from the description, like:
