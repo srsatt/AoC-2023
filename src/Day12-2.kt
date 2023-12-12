@@ -1,3 +1,5 @@
+import kotlin.system.measureTimeMillis
+
 class Record(val string: String, val pattern: List<Int>)
 
 
@@ -92,12 +94,12 @@ fun main() {
         }
 
         val res = records.sumOf {
-            println(
-                """parsing string: ${it.string} [${it.pattern.joinToString(", ")}]""".trimIndent()
-            )
+//            println(
+//                """parsing string: ${it.string} [${it.pattern.joinToString(", ")}]""".trimIndent()
+//            )
 
             val res = interateVariants(it)
-            println("""result for string is: $res""")
+//            println("""result for string is: $res""")
             res
         }
         println("""res of the part 2 is: $res""")
@@ -112,9 +114,13 @@ fun main() {
 
     check(part2(testInput, 1) == 21L)
 
+
     check(part2(testInput, 5) == 525152L)
 
 
     val input = readInput("Day12")
-    part2(input, 5).println()
+    val time = measureTimeMillis {
+        part2(input, 5).println()
+    }
+    println("time is: ${time}ms")
 }
