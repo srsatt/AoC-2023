@@ -11,50 +11,70 @@ fun recordIsValid(record: Record): Boolean {
     return lengthEnough && blocksIsEnough && maxPattern
 }
 
-fun interateVariants(record: Record): Sequence<Record> {
-    return sequence {
-        if (!record.string.contains('#') && record.pattern.isEmpty()) {
-            yield(Record(record.string.replace('?', '.'), listOf()))
-        }
-        val maxBlockLength = record.pattern.maxOrNull()
-        if (maxBlockLength != null) {
-            record.string.windowedSequence(maxBlockLength).forEachIndexed { index, window ->
-                if (!window.contains('.') && (index == 0 || record.string.get(index - 1) != '#')) {
-                    val indexOfMax = record.pattern.indexOf(maxBlockLength)
-                    var head = record.string.substring(0..<index)
 
-                    var tail = record.string.substring(index + window.length)
-
-
-
-                    if (
-                        (tail.isEmpty() || tail.first() != '#') && (head.isEmpty() || head.last() != '#')
-                    ) {
-                        if (head.lastOrNull() == '?') {
-                            head = head.removeSuffix("?") + '.'
-                        }
-                        if (tail.firstOrNull() == '?') {
-                            tail = '.' + tail.removePrefix("?")
-                        }
-                        val headRecord = Record(head, record.pattern.slice(0..<indexOfMax))
-                        val tailRecord = Record(tail, record.pattern.drop(indexOfMax + 1))
-                        if (recordIsValid(headRecord) && recordIsValid(tailRecord)) {
-                            interateVariants(tailRecord).forEach { tRecord ->
-                                interateVariants(headRecord).forEach { hRecord ->
-                                    yield(
-                                        Record(
-                                            hRecord.string + "#".repeat(maxBlockLength) + tRecord.string,
-                                            listOf<Int>()
-                                        )
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
+fun interateVariants(record: Record, map: MutableMap<String, Long> = mutableMapOf<String, Long>()): Long {
+    if (map.contains(record.string + record.pattern.joinToString(","))) {
+        return map[record.string + record.pattern.joinToString(",")]!!
     }
+    var res = 0L;
+    if (!record.string.contains('#') && record.pattern.isEmpty()) {
+//            yield(Record(record.string.replace('?', '.'), listOf()))
+        res = 1L;
+        map.put(record.string + record.pattern.joinToString(","), res)
+        return res
+    }
+    val maxBlockLength = record.pattern.maxOrNull()
+    if (maxBlockLength != null) {
+        val variantsCount = record.string.windowedSequence(maxBlockLength).mapIndexed { index, window ->
+            if (!window.contains('.') && (index == 0 || record.string.get(index - 1) != '#')) {
+                val indexOfMax = record.pattern.indexOf(maxBlockLength)
+                var head = record.string.substring(0..<index)
+
+                var tail = record.string.substring(index + window.length)
+
+
+
+                if (
+                    (tail.isEmpty() || tail.first() != '#') && (head.isEmpty() || head.last() != '#')
+                ) {
+                    if (head.lastOrNull() == '?') {
+                        head = head.removeSuffix("?") + '.'
+                    }
+                    if (tail.firstOrNull() == '?') {
+                        tail = '.' + tail.removePrefix("?")
+                    }
+                    val headRecord = Record(head, record.pattern.slice(0..<indexOfMax))
+                    val tailRecord = Record(tail, record.pattern.drop(indexOfMax + 1))
+                    if (recordIsValid(headRecord) && recordIsValid(tailRecord)) {
+                        interateVariants(tailRecord, map) * interateVariants(headRecord, map)
+//                            .forEach { tRecord ->
+//                                .forEach { hRecord ->
+//                                    yield(
+//                                        Record(
+//                                            hRecord.string + "#".repeat(maxBlockLength) + tRecord.string,
+//                                            listOf<Int>()
+//                                        )
+//                                    )
+//                                }
+//                            }
+//                        }
+                    } else {
+                        0
+                    }
+                } else {
+                    0L
+                }
+            } else {
+                0L
+            }
+        }.sum()
+        res = variantsCount
+        map.put(record.string + record.pattern.joinToString(","), res)
+        return res
+    }
+    res = 0L
+    map.put(record.string + record.pattern.joinToString(","), res)
+    return res
 }
 
 fun main() {
@@ -75,8 +95,8 @@ fun main() {
             println(
                 """parsing string: ${it.string} [${it.pattern.joinToString(", ")}]""".trimIndent()
             )
-//            interateVariants(it).forEach { v -> println(v.string) }
-            val res = interateVariants(it).count().toLong()
+
+            val res = interateVariants(it)
             println("""result for string is: $res""")
             res
         }
